@@ -6,6 +6,7 @@
 #include <tesseract/baseapi.h>
 #include <tesseract/strngs.h>
 #include <string> 
+
  using namespace std;
  using namespace cv;
 
@@ -26,31 +27,33 @@ sprintf(p,"convert %s -units PixelsPerInch -density 300 input.jpg", argv[1]);
 system(p);
 src=imread("input.jpg");
 
-int times;
-
 Mat org;
 src.copyTo(org);
 Mat hsv;
 
 //improving contrast
-for(int x_coor=0;x_coor<src.cols;x_coor++) {
-     for(int y_coor=0;y_coor<src.rows;y_coor++) {
-         if(src.at<Vec3b>(y_coor,x_coor)[0]>180 && src.at<Vec3b>(y_coor,x_coor)[1]>180 && src.at<Vec3b>(y_coor,x_coor)[2]>180)
-         	              src.at<Vec3b>(y_coor,x_coor)[1]=255,src.at<Vec3b>(y_coor,x_coor)[2]=255, src.at<Vec3b>(y_coor,x_coor)[0]=255;
+// for(int x_coor=0;x_coor<src.cols;x_coor++) {
+//      for(int y_coor=0;y_coor<src.rows;y_coor++) {
+//          if(src.at<Vec3b>(y_coor,x_coor)[0]>180 && src.at<Vec3b>(y_coor,x_coor)[1]>180 && src.at<Vec3b>(y_coor,x_coor)[2]>180)
+//          	              src.at<Vec3b>(y_coor,x_coor)[1]=255,src.at<Vec3b>(y_coor,x_coor)[2]=255, src.at<Vec3b>(y_coor,x_coor)[0]=255;
 
-         if(src.at<Vec3b>(y_coor,x_coor)[0]<50 && src.at<Vec3b>(y_coor,x_coor)[1] <50 && src.at<Vec3b>(y_coor,x_coor)[2] <50)
-              src.at<Vec3b>(y_coor,x_coor)[1]=0,src.at<Vec3b>(y_coor,x_coor)[2]=0, src.at<Vec3b>(y_coor,x_coor)[0]=0;
-     }
- }
+//          if(src.at<Vec3b>(y_coor,x_coor)[0]<50 && src.at<Vec3b>(y_coor,x_coor)[1] <50 && src.at<Vec3b>(y_coor,x_coor)[2] <50)
+//               src.at<Vec3b>(y_coor,x_coor)[1]=0,src.at<Vec3b>(y_coor,x_coor)[2]=0, src.at<Vec3b>(y_coor,x_coor)[0]=0;
+//      }
+//  }
 imshow("increased contrast",src);
 
 cvtColor(src,hsv,CV_BGR2HSV);
 
 Mat conv;
+Mat hist_gray;
 cvtColor(hsv,conv,CV_HSV2BGR);
 //char s[100];
 cvtColor(conv,gray,CV_BGR2GRAY);
-cv::threshold(gray, binary, 0, 255, CV_THRESH_BINARY_INV|CV_THRESH_OTSU);   
+imshow("gray",gray);
+equalizeHist(gray,hist_gray);
+imshow("hist_gray",hist_gray);
+cv::threshold(hist_gray, binary, 0, 255, CV_THRESH_BINARY_INV|CV_THRESH_OTSU);   
 imshow("thresholding",binary);
 Mat binaryD,binaryM,binaryD4;
 Mat kernel = Mat::ones(Size(3,3), CV_8U);
@@ -127,6 +130,7 @@ vector < vector<cv::Point>  > blobs;
 
 Mat img;
 imshow("label_image",label_image);
+
 int val[20]={0};
 int val_y[20]={0};
 int H=src.rows;
@@ -155,9 +159,10 @@ for (size_t i = 0; i < blobs.size(); i++) {
         val[(20*y)/H]++;
         // Frequency of y position
         val_y[(y1*20)/H]++;
+
     }
 }
-
+imwrite("red_rec.jpg",org);
 
 int max_val=0;
 int max_val_idx=0;
@@ -181,7 +186,7 @@ dilate(binary2,binary2,kernel_s);
 
 // Inverted again/ Why???????????
 cv::threshold(label_image,label_image, 0, 255, CV_THRESH_BINARY_INV);
-
+imwrite("label_image.jpg", label_image);
 
 char b[100];
 for (size_t i = 0; i < blobs.size(); i++) {
