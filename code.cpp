@@ -48,7 +48,6 @@ cvtColor(src,hsv,CV_BGR2HSV);
 
 Mat conv;
 cvtColor(hsv,conv,CV_HSV2BGR);
-imshow("illumination correction",conv);
 //char s[100];
 cvtColor(conv,gray,CV_BGR2GRAY);
 cv::threshold(gray, binary, 0, 255, CV_THRESH_BINARY_INV|CV_THRESH_OTSU);   
@@ -60,16 +59,13 @@ Mat kernel_s = Mat::ones(Size(1,1), CV_8U);
 dilate(binary,binary,kernel);
 erode(binary, binaryD,kernel_s);
 medianBlur(binaryD,binaryM,1);
-imshow("binaryM",binaryM);
+imshow("binary_after_median_blur",binaryM);
 
 Mat binary2=cv::Scalar::all(255)-binaryM;
 dilate(binary2, binary2,kernel_s);
-imshow("binary2",binary2);
+imshow("dilate inverted binary",binary2);
 
-Mat kernel4=Mat::ones(Size(2,6),CV_8U); 
-
-binaryM.copyTo(binaryD4);
-imshow("binaryD4",binaryD4);
+// Mat kernel4=Mat::ones(Size(2,6),CV_8U); 
 
 vector < vector<cv::Point>  > blobs;
             blobs.clear();
@@ -83,7 +79,7 @@ vector < vector<cv::Point>  > blobs;
             ///out objective is to find a set of 1's that are together and assign 2 to it
             ///then look for other 1's, and assign 3 to it....so on a soforth
 
-            binaryD4.convertTo(label_image, CV_32FC1); // weird it doesn't support CV_32S! Because the CV::SCALAR is a double value in the function floodfill
+            binaryM.convertTo(label_image, CV_32FC1); // weird it doesn't support CV_32S! Because the CV::SCALAR is a double value in the function floodfill
 
             int label_count = 2; // starts at 2 because 0,1 are used already
 
@@ -142,6 +138,7 @@ int k = 0;
 Point p1,p2;
 int x1,y1,x,y;
 
+// Finding frequency of each height
 for (size_t i = 0; i < blobs.size(); i++) {
     boundRect[i]=boundingRect(Mat( blobs[i]));
     p1=boundRect[i].tl();
@@ -150,10 +147,13 @@ for (size_t i = 0; i < blobs.size(); i++) {
     y1=p1.y;
     x=-x1+p2.x;
     y=-y1+p2.y;
-    if(y>H/32 && (y>=x) && ((x>0 && y>0)))// && y1>=org.rows/3 && p2.y>=org.rows/3) 
-{   
+
+    // Kamina hardcode
+    if(y>H/32 && (y>=x) && ((x>0 && y>0))) {   
         rectangle(org,p1,p2,Scalar(0,0,255),2,8,0);
+        // Frequency of height
         val[(20*y)/H]++;
+        // Frequency of y position
         val_y[(y1*20)/H]++;
     }
 }
@@ -163,8 +163,8 @@ int max_val=0;
 int max_val_idx=0;
 int max_y_idx=0;
 int max_y=0;
+// Calculating maximum of height and Frequency position
 for(int i=0;i<20;i++) {
-    // cout<<" "<<val_y[i];
     if(val_y[i]>max_y)
     {
         max_y=val_y[i];
@@ -176,11 +176,14 @@ for(int i=0;i<20;i++) {
     }
 }
 
+// Remove connected numbbers
 dilate(binary2,binary2,kernel_s);
 
+// Inverted again/ Why???????????
 cv::threshold(label_image,label_image, 0, 255, CV_THRESH_BINARY_INV);
-char b[100];
 
+
+char b[100];
 for (size_t i = 0; i < blobs.size(); i++) {
     boundRect[i]=boundingRect(Mat( blobs[i]));
     Point p1=boundRect[i].tl();
@@ -190,24 +193,25 @@ for (size_t i = 0; i < blobs.size(); i++) {
     int y1=p1.y;
     int x=abs(x1-p2.x);
     int y=abs(y1-p2.y);
-    if(y>H/32 && (y>=x)&&(x>0 && y>0))// && y1>=org.rows/3 && p2.y>=org.rows/3)//&&(x*y>=100)&&(x*y<=700))// &&(x*y>=500) &&((boss.cols-x)>=10)&&((boss.rows-y)>=10))
+    
+    // ALready did this?? Fuckers
+    if(y>H/32 && (y>=x)&&(x>0 && y>0))
     {
-
         if( y/x<=4 && abs((20*y)/H-max_val_idx)<=1 && abs((y1*20)/H-max_y_idx)<=1)// && x*y>=H/2 && x*y<=15*H/2 )
         {  
-
             if(x1+x+4>W || y1+y+4>H  || x1<2 || y1<2) {
                img=binary2(Rect(x1,y1,x,y));
            } else {
-                img=binary2(Rect(x1-1, y1-1, x+2,y+2));
-            }
-            rectangle(org,p1,p2,Scalar(0,255,0),2,8,0);
+               img=binary2(Rect(x1-1, y1-1, x+2,y+2));
+           }
+
+           rectangle(org,p1,p2,Scalar(0,255,0),2,8,0);
            // cout<<"area="<<x*y<<endl;
-            sprintf(b, "roi%d.tif", k);
-            // imwrite(b,img);
+           sprintf(b, "roi%d.tif", k);
+          imwrite(b,img);
             // sprintf(c, "convert -units PixelsPerInch roi%d.tiff -density 600 output%d.tiff", k, k);
             // popen(c,"r");
-            sprintf(b, "tesseract roi%d.tif -psm 10 out%d num_plate",k,k);
+           sprintf(b, "tesseract roi%d.tif -psm 10 out%d num_plate",k,k);
             popen(b,"r");
             k++;
         }
