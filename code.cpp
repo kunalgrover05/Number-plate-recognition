@@ -41,26 +41,35 @@ Mat hsv;
 //               src.at<Vec3b>(y_coor,x_coor)[1]=0,src.at<Vec3b>(y_coor,x_coor)[2]=0, src.at<Vec3b>(y_coor,x_coor)[0]=0;
 //      }
 //  }
-imshow("increased contrast",src);
+// imshow("increased contrast",src);
 
-cvtColor(src,hsv,CV_BGR2HSV);
+// cvtColor(src,hsv,CV_BGR2HSV);
 
-Mat conv;
+// Mat conv;
 Mat hist_gray;
-cvtColor(hsv,conv,CV_HSV2BGR);
+// cvtColor(hsv,conv,CV_HSV2BGR);
 //char s[100];
-cvtColor(conv,gray,CV_BGR2GRAY);
+cvtColor(src,gray,CV_BGR2GRAY);
 imshow("gray",gray);
 equalizeHist(gray,hist_gray);
 imshow("hist_gray",hist_gray);
 cv::threshold(hist_gray, binary, 0, 255, CV_THRESH_BINARY_INV|CV_THRESH_OTSU);   
 imshow("thresholding",binary);
+//do small dilation to strengthen if weak symbols
+
+medianBlur(binary,binary,1);    //3 was good
+imshow("removing salt and pepper noise",binary);
+//thresholding followed by median blur to remove salt and pepper noise
 Mat binaryD,binaryM,binaryD4;
 Mat kernel = Mat::ones(Size(3,3), CV_8U);
 Mat kernel_s = Mat::ones(Size(1,1), CV_8U);
-
-dilate(binary,binary,kernel);
+//first do opening to remove small objects from foreground
+erode(binary,binary,kernel_s);
+dilate(binary,binary,kernel_s);
+imshow("opening",binary);
+dilate(binary,binary,kernel_s);
 erode(binary, binaryD,kernel_s);
+imshow("closing result",binaryD);
 medianBlur(binaryD,binaryM,1);
 imshow("binary_after_median_blur",binaryM);
 
@@ -128,9 +137,12 @@ vector < vector<cv::Point>  > blobs;
                 }
             }
 
+
+char a[100];
 Mat img;
 imshow("label_image",label_image);
-
+sprintf(a, "outputlabel%s", argv[1]);
+ imwrite(a,label_image);
 int val[20]={0};
 int val_y[20]={0};
 int H=src.rows;
@@ -224,13 +236,14 @@ for (size_t i = 0; i < blobs.size(); i++) {
 }
  
  imshow("Final Image", org);
- sprintf(b, "output%s", argv[1]);
+ sprintf(b, "output2%s", argv[1]);
+
  cout<<b;
  imwrite(b,org);
 
 t2=clock();
 cout<<"time"<<((float)(t2-t1))/CLOCKS_PER_SEC;
-cvWaitKey();
+//cvWaitKey();
 return 0;
 
 
