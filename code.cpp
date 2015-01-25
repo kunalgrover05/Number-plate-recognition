@@ -46,14 +46,17 @@ Mat hsv;
 // cvtColor(src,hsv,CV_BGR2HSV);
 
 // Mat conv;
-Mat kernel = Mat::ones(Size(2,2), CV_8U);
+Mat kernel = Mat::ones(Size(3,3), CV_8U);
 Mat kernel_s = Mat::ones(Size(1,1), CV_8U);
 Mat hist_gray, new_gray;
 // cvtColor(hsv,conv,CV_HSV2BGR);
 //char s[100];
 cvtColor(src,gray,CV_BGR2GRAY);
 imshow("gray",gray);
-
+erode(gray,gray,kernel);
+imshow("dilated_gray",gray);
+medianBlur(gray,gray,1);
+imshow("median_blur",gray);
 equalizeHist(gray,hist_gray);
 // imshow("hist_gray",hist_gray);
 threshold(gray,new_gray,70,255,THRESH_BINARY);
@@ -252,7 +255,7 @@ for (size_t i = 0; i < blobs.size(); i++) {
 
 t2=clock();
 cout<<"time"<<((float)(t2-t1))/CLOCKS_PER_SEC;
-cvWaitKey();
+// cvWaitKey();
 return 0;
 
 
