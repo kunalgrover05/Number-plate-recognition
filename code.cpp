@@ -46,13 +46,23 @@ Mat hsv;
 // cvtColor(src,hsv,CV_BGR2HSV);
 
 // Mat conv;
-Mat hist_gray;
+Mat kernel = Mat::ones(Size(2,2), CV_8U);
+Mat kernel_s = Mat::ones(Size(1,1), CV_8U);
+Mat hist_gray, new_gray;
 // cvtColor(hsv,conv,CV_HSV2BGR);
 //char s[100];
 cvtColor(src,gray,CV_BGR2GRAY);
 imshow("gray",gray);
+
 equalizeHist(gray,hist_gray);
-imshow("hist_gray",hist_gray);
+// imshow("hist_gray",hist_gray);
+threshold(gray,new_gray,70,255,THRESH_BINARY);
+char d[100];
+
+imshow("new",new_gray);
+sprintf(d, "outputnew%s", argv[1]);
+ imwrite(d,new_gray);
+
 cv::threshold(hist_gray, binary, 0, 255, CV_THRESH_BINARY_INV|CV_THRESH_OTSU);   
 imshow("thresholding",binary);
 //do small dilation to strengthen if weak symbols
@@ -61,8 +71,7 @@ medianBlur(binary,binary,1);    //3 was good
 imshow("removing salt and pepper noise",binary);
 //thresholding followed by median blur to remove salt and pepper noise
 Mat binaryD,binaryM,binaryD4;
-Mat kernel = Mat::ones(Size(3,3), CV_8U);
-Mat kernel_s = Mat::ones(Size(1,1), CV_8U);
+
 //first do opening to remove small objects from foreground
 erode(binary,binary,kernel_s);
 dilate(binary,binary,kernel_s);
@@ -243,7 +252,7 @@ for (size_t i = 0; i < blobs.size(); i++) {
 
 t2=clock();
 cout<<"time"<<((float)(t2-t1))/CLOCKS_PER_SEC;
-//cvWaitKey();
+cvWaitKey();
 return 0;
 
 
