@@ -10,6 +10,22 @@
  using namespace std;
  using namespace cv;
 
+//gamma correction
+
+Mat correctGamma( Mat& img, double gamma ) {
+ double inverse_gamma = 1.0 / gamma;
+
+ Mat lut_matrix(1, 256, CV_8UC1 );
+ uchar * ptr = lut_matrix.ptr();
+ for( int i = 0; i < 256; i++ )
+   ptr[i] = (int)( pow( (double) i / 255.0, inverse_gamma ) * 255.0 );
+
+ Mat result;
+ LUT( img, lut_matrix, result );
+
+ return result;
+}
+
 int main( int argc, char** argv )
 {
 clock_t t1,t2;
@@ -46,48 +62,55 @@ Mat hsv;
 // cvtColor(src,hsv,CV_BGR2HSV);
 
 // Mat conv;
-Mat kernel = Mat::ones(Size(3,3), CV_8U);
+Mat kernel = Mat::ones(Size(2,2), CV_8U);
+Mat kernel_b = Mat::ones(Size(3,3), CV_8U);
 Mat kernel_s = Mat::ones(Size(1,1), CV_8U);
 Mat hist_gray, new_gray;
 // cvtColor(hsv,conv,CV_HSV2BGR);
 //char s[100];
 cvtColor(src,gray,CV_BGR2GRAY);
 imshow("gray",gray);
+gray=correctGamma(gray,1.5);
+imshow("gamma_correct",gray);
 erode(gray,gray,kernel);
-imshow("dilated_gray",gray);
-medianBlur(gray,gray,1);
-imshow("median_blur",gray);
-equalizeHist(gray,hist_gray);
+imshow("erode_gray",gray);
+Mat binary2;
+// equalizeHist(gray,hist_gray);
 // imshow("hist_gray",hist_gray);
-threshold(gray,new_gray,70,255,THRESH_BINARY);
+threshold(gray,binary2,90,255,THRESH_BINARY);  //earlier was 70
 char d[100];
 
-imshow("new",new_gray);
+imshow("new",binary2);
 sprintf(d, "outputnew%s", argv[1]);
- imwrite(d,new_gray);
+imwrite(d,binary2);
+// medianBlur(binary2,binary2,1);
+erode(binary2,binary2,kernel);
+dilate(binary2,binary2,kernel);
+imshow("dilate",binary2);
+cv::threshold(binary2, binary2, 0, 255, CV_THRESH_BINARY_INV|CV_THRESH_OTSU);   
 
-cv::threshold(hist_gray, binary, 0, 255, CV_THRESH_BINARY_INV|CV_THRESH_OTSU);   
-imshow("thresholding",binary);
-//do small dilation to strengthen if weak symbols
+// cv::threshold(hist_gray, binary, 0, 255, CV_THRESH_BINARY_INV|CV_THRESH_OTSU);   
+// imshow("thresholding",binary);
+// //do small dilation to strengthen if weak symbols
 
-medianBlur(binary,binary,1);    //3 was good
-imshow("removing salt and pepper noise",binary);
-//thresholding followed by median blur to remove salt and pepper noise
-Mat binaryD,binaryM,binaryD4;
+// medianBlur(binary,binary,1);    //3 was good
+// imshow("removing salt and pepper noise",binary);
+// //thresholding followed by median blur to remove salt and pepper noise
+// Mat binaryD,binaryM,binaryD4;
 
-//first do opening to remove small objects from foreground
-erode(binary,binary,kernel_s);
-dilate(binary,binary,kernel_s);
-imshow("opening",binary);
-dilate(binary,binary,kernel_s);
-erode(binary, binaryD,kernel_s);
-imshow("closing result",binaryD);
-medianBlur(binaryD,binaryM,1);
-imshow("binary_after_median_blur",binaryM);
+// //first do opening to remove small objects from foreground
+// erode(binary,binary,kernel_s);
+// dilate(binary,binary,kernel_s);
+// imshow("opening",binary);
+// dilate(binary,binary,kernel_s);
+// erode(binary, binaryD,kernel_s);
+// imshow("closing result",binaryD);
+// medianBlur(binaryD,binaryM,1);
+// imshow("binary_after_median_blur",binaryM);
 
-Mat binary2=cv::Scalar::all(255)-binaryM;
-dilate(binary2, binary2,kernel_s);
-imshow("dilate inverted binary",binary2);
+// Mat binary2=cv::Scalar::all(255)-binaryM;
+// dilate(binary2, binary2,kernel_s);
+// imshow("dilate inverted binary",binary2);
 
 // Mat kernel4=Mat::ones(Size(2,6),CV_8U); 
 
@@ -103,7 +126,7 @@ vector < vector<cv::Point>  > blobs;
             ///out objective is to find a set of 1's that are together and assign 2 to it
             ///then look for other 1's, and assign 3 to it....so on a soforth
 
-            binaryM.convertTo(label_image, CV_32FC1); // weird it doesn't support CV_32S! Because the CV::SCALAR is a double value in the function floodfill
+            binary2.convertTo(label_image, CV_32FC1); // weird it doesn't support CV_32S! Because the CV::SCALAR is a double value in the function floodfill
 
             int label_count = 2; // starts at 2 because 0,1 are used already
 
@@ -118,8 +141,8 @@ vector < vector<cv::Point>  > blobs;
             //just check the Matrix of label_image to make sure we have 0 and 1 only
             //cout << label_image << endl;
 
-            for(int y=0; y < binary.rows; y++) {
-                for(int x=0; x < binary.cols; x++) {
+            for(int y=0; y < binary2.rows; y++) {
+                for(int x=0; x < binary2.cols; x++) {
                     float checker = label_image.at<float>(y,x); //need to look for float and not int as the scalar value is of type double
                     cv::Rect rect;
                     //cout << "check:" << checker << endl;
@@ -154,7 +177,7 @@ char a[100];
 Mat img;
 imshow("label_image",label_image);
 sprintf(a, "outputlabel%s", argv[1]);
- imwrite(a,label_image);
+imwrite(a,label_image);
 int val[20]={0};
 int val_y[20]={0};
 int H=src.rows;
@@ -211,7 +234,6 @@ dilate(binary2,binary2,kernel_s);
 // Inverted again/ Why???????????
 cv::threshold(label_image,label_image, 0, 255, CV_THRESH_BINARY_INV);
 imwrite("label_image.jpg", label_image);
-
 char b[100];
 for (size_t i = 0; i < blobs.size(); i++) {
     boundRect[i]=boundingRect(Mat( blobs[i]));
