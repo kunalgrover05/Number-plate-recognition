@@ -1,6 +1,0 @@
-for i in $(seq 1 2):
-	do 
-		echo $i
-		echo $i.jpg
-		../c $i.jpg
-	done
