@@ -11,10 +11,12 @@
 #include "opencv2/highgui/highgui.hpp"
 #include <math.h>
 #include <ctime>
+#include <sstream>
 #include <string> 
 
 using namespace std;
 using namespace cv;
+string s = new String();
 
 // Gamma Correction
 Mat correctGamma( Mat& img, double gamma ) {
@@ -46,9 +48,9 @@ int main( int argc, char** argv ) {
     // Command for converting image to 300ppi 
     // Requires Image magick
     // Saves it as input.jpg
-    char p[100];
-    sprintf( p, "convert %s -units PixelsPerInch -density 300 input.jpg", argv[1] );
-    system( p );
+    // char p[100];
+    // sprintf( p, "convert %s -units PixelsPerInch -density 300 input.jpg", argv[1] );
+    // system( p );
 
     Mat src = imread( "input.jpg" );
     src.copyTo(org);
@@ -268,20 +270,33 @@ int main( int argc, char** argv ) {
                // cout<<"area="<<x*y<<endl;
                sprintf(b, "roi%d.tif", k);
               imwrite(b,img);
+              /*print on image"*/
+              s+=to_string(b);
+
                 // sprintf(c, "convert -units PixelsPerInch roi%d.tiff -density 600 output%d.tiff", k, k);
                 // popen(c,"r");
-               sprintf(b, "tesseract roi%d.tif -psm 10 out%d num_plate",k,k);
-                popen(b,"r");
+           //    sprintf(b, "tesseract roi%d.tif -psm 10 out%d num_plate",k,k);
+             //   popen(b,"r");
                 k++;
             }
         }
     }
-     
+    int fontFace = FONT_HERSHEY_SCRIPT_SIMPLEX;
+    double fontScale = 2;
+    int thickness = 3;  
+    cv::Point textOrg(10, 130);
+    
+     cv::putText(org, s, textOrg, fontFace, fontScale, Scalar::all(255), thickness,8);
+
      imshow("Final Image", org);
+
      sprintf(b, "output2%s", argv[1]);
 
      cout<<b;
+     
+
      imwrite(b,org);
+
 
     t2=clock();
     cout<<"time"<<((float)(t2-t1))/CLOCKS_PER_SEC;
