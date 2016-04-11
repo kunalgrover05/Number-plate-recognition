@@ -16,7 +16,6 @@
 
 using namespace std;
 using namespace cv;
-string s = new String();
 
 // Gamma Correction
 Mat correctGamma( Mat& img, double gamma ) {
@@ -52,7 +51,7 @@ int main( int argc, char** argv ) {
     // sprintf( p, "convert %s -units PixelsPerInch -density 300 input.jpg", argv[1] );
     // system( p );
 
-    Mat src = imread( "input.jpg" );
+    Mat src = imread( argv[1] );
     src.copyTo(org);
 
     /***** Improving Contrast *******
@@ -245,7 +244,7 @@ int main( int argc, char** argv ) {
 
     cv::threshold(label_image,label_image, 0, 255, CV_THRESH_BINARY_INV);
     imwrite("label_image.jpg", label_image);
-    char b[100];
+    char b[100], c[100];
     for (size_t i = 0; i < blobs.size(); i++) {
         boundRect[i]=boundingRect(Mat( blobs[i]));
         Point p1=boundRect[i].tl();
@@ -262,40 +261,33 @@ int main( int argc, char** argv ) {
             {  
                 if(x1+x+4>W || y1+y+4>H  || x1<2 || y1<2) {
                    img=binary2(Rect(x1,y1,x,y));
-               } else {
+                } else {
                    img=binary2(Rect(x1-1, y1-1, x+2,y+2));
-               }
+                }
 
-               rectangle(org,p1,p2,Scalar(0,255,0),2,8,0);
-               // cout<<"area="<<x*y<<endl;
-               sprintf(b, "roi%d.tif", k);
-              imwrite(b,img);
-              /*print on image"*/
-              s+=to_string(b);
-
-                // sprintf(c, "convert -units PixelsPerInch roi%d.tiff -density 600 output%d.tiff", k, k);
-                // popen(c,"r");
-           //    sprintf(b, "tesseract roi%d.tif -psm 10 out%d num_plate",k,k);
-             //   popen(b,"r");
+                rectangle(org,p1,p2,Scalar(0,255,0),2,8,0);
+                sprintf(b, "roi%d.tif", k);
+                imwrite(b,img);
+              
+                sprintf(c, "convert -units PixelsPerInch roi%d.tif -density 600 output%d.tif", k, k);
+                popen(c,"r");
+                sprintf(b, "tesseract roi%d.tif -psm 10 out%d num_plate_whitelist",k,k);
+                popen(b,"r");
                 k++;
             }
         }
     }
-    int fontFace = FONT_HERSHEY_SCRIPT_SIMPLEX;
-    double fontScale = 2;
-    int thickness = 3;  
-    cv::Point textOrg(10, 130);
+    // TODO Read from files 0 -- X.txt and print the number plate on the original image
+    // int fontFace = FONT_HERSHEY_SCRIPT_SIMPLEX;
+    // double fontScale = 2;
+    // int thickness = 3;  
+    // cv::Point textOrg(10, 130);
     
-     cv::putText(org, s, textOrg, fontFace, fontScale, Scalar::all(255), thickness,8);
-
-     imshow("Final Image", org);
-
-     sprintf(b, "output2%s", argv[1]);
-
-     cout<<b;
-     
-
-     imwrite(b,org);
+    //  cv::putText(org, s, textOrg, fontFace, fontScale, Scalar::all(255), thickness,8);
+    //  imshow("Final Image", org);
+    //  sprintf(b, "output2%s", argv[1]);
+    //  cout<<b;
+    //  imwrite(b,org);
 
 
     t2=clock();
